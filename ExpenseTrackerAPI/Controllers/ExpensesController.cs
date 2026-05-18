@@ -35,4 +35,38 @@ public class ExpensesController : ControllerBase
 
         return Ok(expense);
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateExpense(int id, Expense expense)
+    {
+        // validate ID match
+        if (id != expense.Id)
+            return BadRequest("Expense ID mismatch");
+
+        // fetch existing entity
+        var expenseToUpdate = await _context.Expenses.FindAsync(id);
+        if (expenseToUpdate == null) return NotFound($"Employee with ID = {id} not found");
+
+        // update and save
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteExpense(int id)
+    {
+        var expenseToDelete = await _context.Expenses.FindAsync(id);
+
+        if (expenseToDelete == null) return NotFound($"Expense with Id = {id} not found");
+
+        _context.Expenses.Remove(expenseToDelete);
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+
+
+    }
+
 }
