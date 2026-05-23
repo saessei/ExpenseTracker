@@ -1,5 +1,6 @@
 using ExpenseTrackerAPI.Data;
 using ExpenseTrackerAPI.Settings;
+using ExpenseTrackerAPI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -27,6 +28,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 });
 
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
