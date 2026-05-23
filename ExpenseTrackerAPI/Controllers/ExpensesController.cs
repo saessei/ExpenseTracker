@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ExpenseTrackerAPI.Data;
@@ -5,6 +6,7 @@ using ExpenseTrackerAPI.Models;
 
 namespace ExpenseTrackerAPI.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ExpensesController : ControllerBase
@@ -19,7 +21,11 @@ public class ExpensesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetExpenses()
     {
-        var expenses = await _context.Expenses.ToListAsync();
+        var userId = int.Parse(User.FindFirst("sub")!.Value);
+
+        var expenses = await _context.Expenses
+            .Where(x => x.UserId == userId)
+            .ToListAsync();
 
         return Ok(expenses);
     }
@@ -27,6 +33,9 @@ public class ExpensesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateExpense(Expense expense)
     {
+        var userId = int.Parse(User.FindFirst("sub")!.Value);
+
+        expense.UserId = userId;
         expense.Date = DateTime.UtcNow;
 
         _context.Expenses.Add(expense);
@@ -37,36 +46,40 @@ public class ExpensesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateExpense(int id, Expense expense)
+    public async Task<IActionResult> UpdateExpense(int id, Expense updatedExpense)
     {
-        // validate ID match
-        if (id != expense.Id)
-            return BadRequest("Expense ID mismatch");
+        var userId = int.Parse(User.FindFirst("sub")!.Value);
 
-        // fetch existing entity
-        var expenseToUpdate = await _context.Expenses.FindAsync(id);
-        if (expenseToUpdate == null) return NotFound($"Employee with ID = {id} not found");
+        var expense = await _context.Expenses
+            .FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId);
 
-        // update and save
+        if (expense == null)
+            return NotFound();
+
+        expense.Title = updatedExpense.Title;
+        expense.Amount = updatedExpense.Amount;
+        expense.Date = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
 
         return NoContent();
     }
 
-    [HttpDelete("{id:int}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteExpense(int id)
     {
-        var expenseToDelete = await _context.Expenses.FindAsync(id);
+        var userId = int.Parse(User.FindFirst("sub")!.Value);
 
-        if (expenseToDelete == null) return NotFound($"Expense with Id = {id} not found");
+        var expense = await _context.Expenses
+            .FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId);
 
-        _context.Expenses.Remove(expenseToDelete);
+        if (expense == null)
+            return NotFound();
+
+        _context.Expenses.Remove(expense);
 
         await _context.SaveChangesAsync();
 
         return NoContent();
-
-
     }
-
 }

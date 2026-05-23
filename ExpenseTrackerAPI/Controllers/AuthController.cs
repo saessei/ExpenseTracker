@@ -38,4 +38,24 @@ public class UserController : ControllerBase
 
         return Ok("User created");
     }
+
+    [HttpPost("login")]
+
+    public async Task<IActionResult> Login(LoginDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == dto.Email);
+
+        if (user == null) return Unauthorized();
+
+        // verify password
+
+        var validPassword = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+
+        if (!validPassword) return Unauthorized();
+
+        var token = _jwt.GenerateToken(user);
+
+        return Ok(new { token });
+        
+    }
 }
